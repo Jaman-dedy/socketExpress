@@ -1,7 +1,9 @@
 const chatForm = document.getElementById('chat-form');
+const feedback = document.querySelector('.outputFeedback');
 const chatMessages = document.querySelector('.chat-messages');
 const roomName = document.getElementById('room-name');
 const userList = document.getElementById('users');
+let timeout;
 
 // Get username and room from URL
 
@@ -25,12 +27,21 @@ socket.on('roomUsers', ({ room, users }) => {
 //message from server
 
 socket.on('message', (message) => {
-  console.log('message:', message);
+  
   outputMessage(message);
 
   //scroll down
 
   chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+
+//feedback from server
+
+socket.on('action', (action) => {
+  console.log('action :>> ', action);
+  
+  outputUserFeedback(action);
+ 
 });
 
 // Message submit
@@ -51,7 +62,22 @@ chatForm.addEventListener('submit', (e) => {
   e.target.elements.msg.focus();
 });
 
-// OutputMessage function to DOm
+// Feedback submit
+
+function timeoutFunction() {
+  socket.emit("feedback", false);
+}
+
+chatForm.addEventListener('keypress', () => {
+ 
+
+  //Emit a feedback to the server
+  socket.emit('feedback', 'is typing...');
+  clearTimeout(timeout)
+  timeout = setTimeout(timeoutFunction, 2000)
+});
+
+// OutputMessage function to Dom
 function outputMessage(message) {
   const div = document.createElement('div');
   div.classList.add('message');
@@ -61,6 +87,18 @@ function outputMessage(message) {
   </p>`;
 
   document.querySelector('.chat-messages').appendChild(div);
+}
+
+// OutputMessage the feedback to Dom
+function outputUserFeedback(message) {
+  if(message.text){
+    feedback.innerHTML = `<p>${message.username} ${message.text}</p>`;
+  } else {
+    feedback.innerHTML = '';
+  }
+ 
+  
+  
 }
 
 // Add room name to Dom
